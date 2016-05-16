@@ -22,4 +22,6 @@ if (process.env.DEBUG) {
 }
 
 // Kick off the server through dependency injection
-container.resolve("apiServer")();
+container.resolve("bootstrapAsync").then(() => {
+    container.resolve("apiServer")();
+});
