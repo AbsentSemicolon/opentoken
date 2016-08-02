@@ -1,0 +1,36 @@
+{
+    "type": "object",
+    "properties": {
+        "mfa": {
+            "type": "object",
+            "properties": {
+                "totp": {
+                    "type": "object",
+                    "format": "totp-current-and-previous",
+                    "properties": {
+                        "current": {
+                            "$ref": "../meta/totp-code.json"
+                        },
+                        "previous": {
+                            "$ref": "../meta/totp-code.json"
+                        }
+                    },
+                    "required": [
+                        "current",
+                        "previous"
+                    ]
+                }
+            },
+            "required": [
+                "totp"
+            ]
+        },
+        "passwordHash": {
+            "$ref": "../meta/password-hash.json"
+        }
+    },
+    "required": [
+        "mfa",
+        "passwordHash"
+    ]
+}

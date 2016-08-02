@@ -1,34 +1,33 @@
 "use strict";
 
-describe("route: /", () => {
-    var factory;
-
-    beforeEach(() => {
-        factory = require("../../route/");
+jasmine.routeTester("/", null, (routeTester) => {
+    it("exports GET and a name", () => {
+        expect(Object.keys(routeTester.exports).sort()).toEqual([
+            "get",
+            "name"
+        ]);
     });
-    it("exports a factory", () => {
-        expect(factory).toEqual(jasmine.any(Function));
-    });
-    describe("factory results", () => {
-        var route, req, res;
-
-        beforeEach(() => {
-            route = factory();
-            req = require("../mock/request");
-            res = require("../mock/response");
+    describe("GET", () => {
+        it("has no content", () => {
+            return routeTester.get().then(() => {
+                expect(routeTester.res.send).toHaveBeenCalledWith(204);
+            });
         });
-        it("has only a GET method", () => {
-            expect(Object.keys(route)).toEqual([
-                "get"
-            ]);
+        it("adds service links", () => {
+            return routeTester.get().then(() => {
+                expect(routeTester.res.linkObjects).toEqual([
+                    {
+                        href: "rendered route: registration-register",
+                        profile: "/schema/registration/register-request.json",
+                        rel: "service",
+                        title: "registration-register"
+                    }
+                ]);
+            });
         });
-        describe("GET", () => {
-            it("does testing-only actions", (done) => {
-                route.get(req, res, () => {
-                    expect(res.contentType).toBe("text/plain");
-                    expect(res.send).toHaveBeenCalled();
-                    done();
-                });
+        it("calls server.get to serve static assets", () => {
+            return routeTester.get().then(() => {
+                expect(routeTester.server.get).toHaveBeenCalledWith(jasmine.any(RegExp), jasmine.any(Function));
             });
         });
     });

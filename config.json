@@ -1,63 +1,126 @@
 {
     "account": {
-        "accountDir": "account/",
-        "accountIdLength": 24,
-        "completeLifetime": {
+        "idHash": {
+            "algorithm": "sha512",
+            "derivedLength": 32,
+            "encoding": "base64-uri",
+            "iterations": 5000,
+            "type": "pbkdf2"
+        },
+        "idLength": 32,
+        "lifetime": {
             "months": 6
         },
-        "idHash": {
-            "algo": "sha256",
-            "hashLength": 24,
-            "iterations": 10000,
-            "salt": ""
+        "loginCookie": {
+            "name": "login",
+            "settings": {
+                "httpOnly": true,
+                "maxAge": 600,
+                "path": "/account/",
+                "secure": true
+            }
         },
-        "initiateLifetime": {
-            "hours": 1
+        "passwordHash": {
+            "algorithm": "sha512",
+            "derivedLength": 48,
+            "encoding": "base64",
+            "iterations": 100000,
+            "type": "pbkdf2"
         },
         "passwordSaltLength": 128,
-        "registrationDir": "registration/",
-        "registrationIdLength": 24
+        "storagePrefix": "account/"
+    },
+    "challenge": {
+        "challengeHash": {
+            "algorithm": "sha512",
+            "encoding": "hex"
+        },
+        "idHash": {
+            "algorithm": "sha512",
+            "derivedLength": 32,
+            "encoding": "base64-uri",
+            "iterations": 5000,
+            "salt": "Something to make this different than the account hash.",
+            "type": "pbkdf2"
+        },
+        "idLength": 128,
+        "lifetime": {
+            "minutes": 10
+        },
+        "storagePrefix": "challenge/"
     },
     "debug": false,
     "encryption": {
         "primary": {
             "cipher": {
-                "algo": "aes-256-cbc",
+                "algorithm": "aes-256-cbc",
                 "digest": "sha512",
                 "iterations": 10000
             },
             "hmac": {
-                "algo": "sha512",
+                "algorithm": "sha512",
                 "digest": "sha512",
                 "iterations": 10000
             }
         },
         "secondary": {
             "cipher": {
-                "algo": "bf-cbc",
+                "algorithm": "bf-cbc",
                 "digest": "whirlpool",
                 "iterations": 10000
             },
             "hmac": {
-                "algo": "whirlpool",
+                "algorithm": "whirlpool",
                 "digest": "whirlpool",
                 "iterations": 10000
             }
         }
     },
-    "hotp": {
-        "name": "OpenToken.io",
-        "keySize": 128
+    "mfa": {
+        "totp": {
+            "keyLength": 128,
+            "name": "OpenToken.io"
+        }
     },
     "record": {
-        "expirationMaximum": {
+        "lifetimeMaximum": {
             "months": 6
         },
         "encryptionKeyFile": "encryption.key"
     },
+    "registration": {
+        "confirmationCodeLength": 32,
+        "idHash": {
+            "algorithm": "sha512",
+            "derivedLength": 48,
+            "encoding": "base64-uri",
+            "iterations": 100000,
+            "type": "pbkdf2"
+        },
+        "idLength": 32,
+        "lifetime": {
+            "hours": 1
+        },
+        "storagePrefix": "registration/"
+    },
     "schemaPath": "./schema",
+    "session": {
+        "idHash": {
+            "algorithm": "sha512",
+            "derivedLength": 48,
+            "encoding": "base64-uri",
+            "iterations": 5000,
+            "type": "pbkdf2"
+        },
+        "idLength": 32,
+        "lifetime": {
+            "minutes": 15
+        },
+        "storagePrefix": "session/"
+    },
     "server": {
-        "baseUrl": "https://localhost:8080/",
+        "baseUrl": "https://localhost:8080",
+        "exceptionIdLength": 12,
         "name": "OpenToken.io",
         "port": 8443,
         "profileMiddleware": false,
@@ -66,7 +129,7 @@
     "storage": {
         "engine": "s3",
         "s3": {
-            "bucket": "fill-this-in",
+            "bucket": "opentoken-io-test-s3",
             "region": "us-east-1"
         }
     }

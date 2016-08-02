@@ -1,44 +1,13 @@
 "use strict";
 
-class StorageMock {
-    constructor() {
-        [
-            "configure",
-            "delAsync",
-            "getAsync",
-            "putAsync"
-        ].forEach((method) => {
-            this[method] = jasmine.createSpy(method);
-        });
-        this.configure.andCallFake(() => {
-            return this;
-        });
-        this.delAsync.andCallFake((directory) => {
-            return new Promise((resolve, reject) => {
-                resolve(true);
-            });
-        });
-        this.getAsync.andCallFake((directory) => {
-            var dataToReturn;
+var promiseMock;
 
-            if (directory.match("registration")) {
-                dataToReturn = '{"data": "thing"}';
-            }
-
-            if (directory.match("some/place/someIdhere")) {
-                dataToReturn = '{"accountId": "unhashedAccountId", "email": "some.one@example.net"}';
-            }
-
-            return new Promise((resolve, reject) => {
-                resolve(new Buffer(dataToReturn, "binary"));
-            });
-        });
-        this.putAsync.andCallFake(() => {
-            return new Promise((resolve, reject) => {
-                resolve(true);
-            });
-        });
-    }
+promiseMock = require("./promise-mock")();
+module.exports = () => {
+    return {
+        configure: jasmine.createSpy("storageMock.configure"),
+        delAsync: jasmine.createSpy("storageMock.delAsync").andReturn(promiseMock.resolve(true)),
+        getAsync: jasmine.createSpy("storageMock.getAsync").andReturn(promiseMock.resolve(new Buffer("record data"))),
+        putAsync: jasmine.createSpy("storageMock.putAsync").andReturn(promiseMock.resolve(true))
+    };
 };
-
-module.exports = new StorageMock();

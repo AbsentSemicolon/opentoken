@@ -1,45 +1,71 @@
 {
     "type": "object",
     "properties": {
-        "accountDir": {
-            "$ref": "storage-dir"
-        },
-        "accountIdLength": {
-            "type": "integer",
-            "minimum": 6
-        },
-        "completeLifetime": {
-            "$ref": "time-offset"
-        },
         "idHash": {
+            "$ref": "../meta/hash-derivation.json"
+        },
+        "idLength": {
+            "description": "Number of bytes for generated IDs.",
+            "type": "integer",
+            "minimum": 8
+        },
+        "lifetime": {
+            "$ref": "time-offset.json"
+        },
+        "loginCookie": {
             "type": "object",
             "properties": {
-                "algo": {
-                    "$ref": "hash-method"
+                "name": {
+                    "type": "string",
+                    "minLength": 1
                 },
-                "hashLength": {
-                    "type": "integer",
-                    "minimum": 6
-                },
-                "iterations": {
-                    "type": "integer",
-                    "minimum": 1000
+                "settings": {
+                    "description": "Security settings for login cookies",
+                    "type": "object",
+                    "properties": {
+                        "domain": {
+                            "type": "string"
+                        },
+                        "httpOnly": {
+                            "type": "boolean"
+                        },
+                        "maxAge": {
+                            "description": "Cookie lifetime in seconds",
+                            "type": "integer"
+                        },
+                        "path": {
+                            "type": "string"
+                        },
+                        "secure": {
+                            "type": "boolean"
+                        }
+                    }
                 }
-            }
+            },
+            "required": [
+                "name",
+                "settings"
+            ]
         },
-        "initiateLifetime": {
-            "$ref": "time-offset"
+        "passwordHash": {
+            "$ref": "../meta/hash-derivation.json"
         },
         "passwordSaltLength": {
+            "description": "Number of characters to use for a password salt.",
             "type": "integer",
-            "minimum": 6
+            "minimum": 8
         },
-        "registrationDir": {
-            "$ref": "storage-dir"
-        },
-        "registrationIdLength": {
-            "type": "integer",
-            "minimum": 6
+        "storagePrefix": {
+            "$ref": "storage-prefix.json"
         }
-    }
+    },
+    "required": [
+        "idHash",
+        "idLength",
+        "lifetime",
+        "loginCookie",
+        "passwordHash",
+        "passwordSaltLength",
+        "storagePrefix"
+    ]
 }

@@ -1,7 +1,7 @@
 "use strict";
 
-/*global Promise*/
-module.exports = {
+/* global Promise */
+module.exports = () => {
     /**
      * Resolves when all promises are resolved.
      *
@@ -11,10 +11,16 @@ module.exports = {
      * @param {Array.<Promise>} promises
      * @return {Promise.<Array>}
      */
-    all: function (promises) {
-        return new Promise((resolve, reject) => {
+    function all(promises) {
+        return new Promise((resolver, rejecter) => {
             var isDone, needed, result;
 
+            /**
+             * Handle a resolved promise
+             *
+             * @param {number} index
+             * @param {*} val
+             */
             function resolved(index, val) {
                 if (isDone) {
                     return;
@@ -25,17 +31,22 @@ module.exports = {
 
                 if (!needed) {
                     isDone = true;
-                    resolve(result);
+                    resolver(result);
                 }
             }
 
+            /**
+             * Handle a rejected promise
+             *
+             * @param {*} val
+             */
             function rejected(val) {
                 if (isDone) {
                     return;
                 }
 
                 isDone = true;
-                reject(val);
+                rejecter(val);
             }
 
             isDone = false;
@@ -45,7 +56,7 @@ module.exports = {
                 promise.then(resolved.bind(null, key), rejected);
             });
         });
-    },
+    }
 
     /**
      * Resolved when the first promise is resolved.  Rejected when the
@@ -54,26 +65,36 @@ module.exports = {
      * @param {Array.<Promise>} promises
      * @return {Promise.<*>}
      */
-    any: function (promises) {
-        return new Promise((resolve, reject) => {
+    function any(promises) {
+        return new Promise((resolver, rejecter) => {
             var isDone;
 
+            /**
+             * Handle a resolved promise
+             *
+             * @param {*} val
+             */
             function resolved(val) {
                 if (isDone) {
                     return;
                 }
 
                 isDone = true;
-                resolve(val);
+                resolver(val);
             }
 
+            /**
+             * Handle a rejected promise
+             *
+             * @param {*} val
+             */
             function rejected(val) {
                 if (isDone) {
                     return;
                 }
 
                 isDone = true;
-                reject(val);
+                rejecter(val);
             }
 
             isDone = false;
@@ -81,64 +102,70 @@ module.exports = {
                 promise.then(resolved, rejected);
             });
         });
-    },
+    }
 
 
     /**
      * Creates a Promise using ES6 syntax
      *
-     * @param {Function(resolve,reject)} cb
+     * @param {Function} cb(resolve,reject)
      * @return {Promise.<*>}
      */
-    create: function (cb) {
+    function create(cb) {
         return new Promise(cb);
-    },
+    }
 
 
     /**
      * Provides a "done" callback to a function so you can wrap
      * Node-style callbacks and make them return promises.
      *
-     * @param {Function(done)} fn
+     * @param {Function} fn(done)
      * @return {Promise.<*>}
      */
-    fromCallback: function (fn) {
-        return new Promise((resolve, reject) => {
+    function fromCallback(fn) {
+        return new Promise((resolver, rejecter) => {
             fn((err, val) => {
                 if (err) {
-                    reject(err);
+                    rejecter(err);
                 } else {
-                    resolve(val);
+                    resolver(val);
                 }
             });
         });
-    },
+    }
 
 
     /**
      * Changes one Node-style callback function into returning a Promise.
      *
      * @param {Function} fn
+     * @param {Object} [context]
      * @return {Promise.<*>}
      */
-    promisify: function (fn) {
+    function promisify(fn, context) {
+        // typeof null === "object", but that is ok here
+        if (typeof context !== "object") {
+            context = null;
+        }
+
         return function () {
             var args;
 
             args = [].slice.call(arguments);
 
-            return new Promise((resolve, reject) => {
+            return new Promise((resolver, rejecter) => {
                 args.push((err, val) => {
                     if (err) {
-                        reject(err);
+                        rejecter(err);
                     } else {
-                        resolve(val);
+                        resolver(val);
                     }
                 });
-                fn.apply(this, args);
+                fn.apply(context, args);
             });
         };
-    },
+    }
 
 
     /**
@@ -148,18 +175,32 @@ module.exports = {
      * @param {Object} object
      * @return {Object}
      */
-    promisifyAll: function (object) {
-        var name, result;
+    function promisifyAll(object) {
+        var result;
 
         result = {};
 
-        for (name in object) {
+        Object.getOwnPropertyNames(object).filter((name) => {
+            var desc;
+
+            desc = Object.getOwnPropertyDescriptor(object, name);
+
+            if (!desc || desc.get || desc.set) {
+                return false;
+            }
+
+            if (typeof object[name] !== "function") {
+                return false;
+            }
+
+            return true;
+        }).forEach((name) => {
             result[name] = object[name];
-            result[name + "Async"] = this.promisify(object[name]);
-        }
+            result[`${name}Async`] = promisify(object[name], object);
+        });
 
         return result;
-    },
+    }
 
 
     /**
@@ -170,19 +211,24 @@ module.exports = {
      * @param {Object} obj
      * @return {Promise.<Object>}
      */
-    props: function (obj) {
-        return new Promise((resolve, reject) => {
+    function props(obj) {
+        return new Promise((resolver, rejecter) => {
             var needed, result;
 
+            /**
+             * Handles a successful resolution
+             */
             function doneWithOne() {
                 needed -= 1;
 
                 if (!needed) {
-                    resolve(result);
+                    resolver(result);
                 }
             }
 
-            needed = 1; // Fake number, removed later
+            // This is a fake number and is removed later.  It exists
+            // in case the first promise is already resolved.
+            needed = 1;
             result = {};
             Object.keys(obj).forEach((key) => {
                 needed += 1;
@@ -192,14 +238,16 @@ module.exports = {
                     result[key] = resolvedValue;
                     doneWithOne();
                 }, (rejectedValue) => {
-                    needed = -1;  // Force this to never call resolve();
-                    reject(rejectedValue);
+                    // Force this to never call resolve();
+                    needed = -1;
+                    rejecter(rejectedValue);
                 });
             });
 
+            // This removes that fake number added earlier.
             doneWithOne();
         });
-    },
+    }
 
 
     /**
@@ -208,11 +256,11 @@ module.exports = {
      * @param {*} val
      * @return {Promise}
      */
-    reject: function (val) {
-        return new Promise((resolve, reject) => {
-            reject(val);
+    function reject(val) {
+        return new Promise((resolver, rejecter) => {
+            rejecter(val);
         });
-    },
+    }
 
 
     /**
@@ -221,11 +269,11 @@ module.exports = {
      * @param {*} val
      * @return {Promise.<*>}
      */
-    resolve: function (val) {
-        return new Promise((resolve) => {
-            resolve(val);
+    function resolve(val) {
+        return new Promise((resolver) => {
+            resolver(val);
         });
-    },
+    }
 
 
     /**
@@ -251,13 +299,26 @@ module.exports = {
      * @param {Function} fn
      * @return {Promise.<*>}
      */
-    try: function (fn) {
-        return new Promise((resolve, reject) => {
+    function tryFn(fn) {
+        return new Promise((resolver, rejecter) => {
             try {
-                resolve(fn());
+                resolver(fn());
             } catch (e) {
-                reject(e);
+                rejecter(e);
             }
         });
     }
+
+    return {
+        all: jasmine.createSpy("promise.all").andCallFake(all),
+        any: jasmine.createSpy("promise.any").andCallFake(any),
+        create: jasmine.createSpy("promise.create").andCallFake(create),
+        fromCallback: jasmine.createSpy("promise.fromCallback").andCallFake(fromCallback),
+        promisify: jasmine.createSpy("promise.promisify").andCallFake(promisify),
+        promisifyAll: jasmine.createSpy("promise.promisify").andCallFake(promisifyAll),
+        props: jasmine.createSpy("promise.props").andCallFake(props),
+        reject: jasmine.createSpy("promise.reject").andCallFake(reject),
+        resolve: jasmine.createSpy("promise.resolve").andCallFake(resolve),
+        try: jasmine.createSpy("promise.try").andCallFake(tryFn)
+    };
 };

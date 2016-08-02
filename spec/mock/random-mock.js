@@ -1,34 +1,36 @@
-"use strict"
+"use strict";
 
-var random;
+module.exports = () => {
+    var random;
 
-random = jasmine.createSpyObj("random", [
-    "bufferAsync",
-    "randomIdAsync"
-]);
+    random = jasmine.createSpyObj("random", [
+        "bufferAsync",
+        "idAsync"
+    ]);
 
-random.bufferAsync.andCallFake((size) => {
-    var buff;
+    random.bufferAsync.andCallFake((size) => {
+        var buff;
 
-    buff = new Buffer(size);
-    buff.fill(0x42);
+        buff = new Buffer(size);
+        buff.fill(0x42);
 
-    return new Promise((resolve, reject) => {
-        resolve(buff);
+        return new Promise((resolve) => {
+            resolve(buff);
+        });
     });
-});
 
-random.randomIdAsync.andCallFake((size) => {
-    var buff;
+    random.idAsync.andCallFake((size) => {
+        var buff;
 
-    buff = new Buffer(size);
-    buff.fill(0x42);
+        buff = new Buffer(size);
 
-    return new Promise((resolve, reject) => {
-        resolve(buff.toString());
+        // Fill with the letter B, BBBBBBBBBBBBB... etc
+        buff.fill(0x42);
+
+        return new Promise((resolve) => {
+            resolve(buff.toString());
+        });
     });
-});
 
-module.exports = random;
-
-
+    return random;
+};

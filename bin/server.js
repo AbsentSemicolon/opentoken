@@ -12,8 +12,8 @@ logger = container.resolve("logger");
 
 // Allow overriding of the port
 if (process.env.PORT) {
-    logger.info("Environment variable overriding port (was " + config.server.port + ", is now " + process.env.PORT + ")");
-    config.server.port = process.env.PORT;
+    logger.info(`Environment variable overriding port (was ${config.server.port}, is now ${process.env.PORT})`);
+    config.server.port = +process.env.PORT;
 }
 
 if (process.env.DEBUG) {
@@ -21,7 +21,7 @@ if (process.env.DEBUG) {
     config.debug = true;
 }
 
-container.resolve("bootstrap")(__dirname + "/..").then(() => {
+container.resolve("bootstrap")().then(() => {
     // Kick off the server through dependency injection
     container.resolve("apiServer")();
 });
